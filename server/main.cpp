@@ -6,7 +6,7 @@ int main(int argc, char *argv[]){
 
     Server *server = new Server("ipc");
 
-    QObject::connect(server, &Server::clientConnected, [server](int clientID){
+    QObject::connect(server, &Server::clientConnected, [](int clientID){
         qDebug() << "Client" << clientID << "connected.";
     });
 
