@@ -10,6 +10,8 @@ class Server : public QObject{
     Q_OBJECT
 
     private:
+        int clientID;
+        QHash<int, QLocalSocket*> clients;
         QLocalServer *m_server;
 
     public:
@@ -17,8 +19,13 @@ class Server : public QObject{
         ~Server();
 
     public slots:
-        void clientDisconnected();
-        void clientConnected();
+        void disconnectClient(int clientID);
+        void sendMessageToClient(int clientID, QString message);
+
+    signals:
+        void clientConnected(int clientID);
+        void newMessageFromClient(int clientID, QString message);
+        void clientDisconnected(int clientID);
 };
 
 #endif // SERVER_H

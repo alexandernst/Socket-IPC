@@ -16,9 +16,41 @@ Server::Server(QString servername, QObject *parent) : QObject(parent){
     }
 
     if (m_server->isListening())
-        qDebug() << "Server started";
+        qDebug() << "Server started.\n\n";
+    clientID = 0;
 
-    connect(m_server, SIGNAL(newConnection()), this, SLOT(clientConnected()));
+    connect(m_server, &QLocalServer::newConnection, [this](){
+        clientID++;
+
+        QLocalSocket *clientConnection = m_server->nextPendingConnection();
+        clients.insert(clientID, clientConnection);
+        clientConnection->setProperty("ID", QVariant(clientID));
+
+        connect(clientConnection, &QLocalSocket::disconnected, [this, clientConnection](){
+            emit clientDisconnected(clientConnection->property("ID").toInt());
+            clientConnection->deleteLater();
+        });
+
+        emit clientConnected(clientID);
+
+        while(clientConnection->bytesAvailable() < (int)sizeof(quint16))
+            clientConnection->waitForReadyRead();
+
+        QDataStream in(clientConnection);
+        in.setVersion(QDataStream::Qt_5_0);
+
+        quint16 bytes_to_read;
+        in >> bytes_to_read;
+
+        while(clientConnection->bytesAvailable() < bytes_to_read)
+            clientConnection->waitForReadyRead();
+
+        QString message;
+        in >> message;
+        message = message.remove(QChar('\"'));
+
+        emit newMessageFromClient(clientID, message);
+    });
 }
 
 Server::~Server(){
@@ -27,52 +59,25 @@ Server::~Server(){
     delete m_server;
 }
 
-void Server::clientDisconnected(){
-    qDebug() << "Client disconnected";
-}
-
-void Server::clientConnected(){
-    qDebug() << "Client connected";
-
-    QLocalSocket *clientConnection = m_server->nextPendingConnection();
-
-    connect(clientConnection, SIGNAL(disconnected()), clientConnection, SLOT(deleteLater()));
-    connect(clientConnection, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
-
-    while(clientConnection->bytesAvailable() < (int)sizeof(quint16))
-        clientConnection->waitForReadyRead();
-
-    QDataStream in(clientConnection);
-    in.setVersion(QDataStream::Qt_5_0);
-
-    quint16 bytes_to_read;
-    in >> bytes_to_read;
-
-    while(clientConnection->bytesAvailable() < bytes_to_read)
-        clientConnection->waitForReadyRead();
-
-    QString message;
-    in >> message;
-    message = message.remove(QChar('\"'));
-
-    qDebug() << "Message received:" << message;
-
+void Server::sendMessageToClient(int clientID, QString message){
+    QLocalSocket *clientConnection = clients.value(clientID);
     clientConnection->flush();
 
     QByteArray block;
     QDataStream out(&block, QIODevice::WriteOnly);
 
-    QString returnMsg = "Message you sent me: " + message;
-
     out.setVersion(QDataStream::Qt_5_0);
-	out << (quint16)returnMsg.size() << returnMsg;
+    out << (quint16)message.size() << message;
 
     qint64 c = clientConnection->write(block);
     clientConnection->waitForBytesWritten();
-    qDebug() << "Number of bytes written" << c;
     if(c == -1)
         qDebug() << "ERROR:" << clientConnection->errorString();
 
     clientConnection->flush();
-    clientConnection->disconnectFromServer();
+}
+
+void Server::disconnectClient(int clientID){
+    clients.value(clientID)->disconnectFromServer();
+    clients.remove(clientID);
 }
