@@ -1,16 +1,16 @@
 #include "server.h"
 
 Server::Server(QString servername, QObject *parent) : QObject(parent){
-    qDebug() << "Starting Server...";
+    qDebug() << "Starting server...";
     m_server = new QLocalServer(this);
 
     while(!m_server->listen(servername)){
         if(m_server->serverError() == QAbstractSocket::AddressInUseError){
             qDebug() << m_server->serverError();
-            qDebug() << "Calling RemoveServer.";
+            qDebug() << "Calling removeServer.";
             m_server->removeServer(servername);
         }else{
-            qDebug() << "Not able to start the Server";
+            qDebug() << "Not able to start the server";
             qDebug() << m_server->serverError();
         }
     }
