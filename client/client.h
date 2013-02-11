@@ -17,18 +17,15 @@ class Client : public QObject{
     public:
         explicit Client(QString sok_name, QObject *parent = 0);
         ~Client();
-        void sendMessage(QString message);
-        QString getMessage();
-
 
     signals:
-        void messageReceived();
+        void disconnected();
+        void newMessageFromServer(QString message);
 
     public slots:
-        void receiveMessage();
-        void socketConnected();
-        void socketDisconnected();
-        void showError(QLocalSocket::LocalSocketError error);
+        void disconnect();
+        void sendMessage(QString message);
+
 };
 
 #endif // CLIENT_H
