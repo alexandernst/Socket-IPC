@@ -5,7 +5,6 @@
 #include <QObject>
 #include <QtNetwork/QLocalSocket>
 
-
 class Client : public QObject{
     Q_OBJECT
 
@@ -15,7 +14,7 @@ class Client : public QObject{
         QString received_message;
 
     public:
-        explicit Client(QString sok_name, QObject *parent = 0);
+        explicit Client(QString sock_name, QObject *parent = 0);
         ~Client();
 
     signals:
