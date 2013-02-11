@@ -6,12 +6,10 @@ Server::Server(QString servername, QObject *parent) : QObject(parent){
 
     while(!m_server->listen(servername)){
         if(m_server->serverError() == QAbstractSocket::AddressInUseError){
-            qDebug() << m_server->serverError();
-            qDebug() << "Calling removeServer.";
+            qDebug() << m_server->serverError() << "\nCalling removeServer...";
             m_server->removeServer(servername);
         }else{
-            qDebug() << "Not able to start the server";
-            qDebug() << m_server->serverError();
+            qDebug() << "Not able to start the server!\n" << m_server->serverError();
         }
     }
 
