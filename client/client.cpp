@@ -48,7 +48,6 @@ void Client::sendMessage(QString message){
     out << message;
     out.device()->seek(0);
     out << (quint16)(block.size() - sizeof(quint16));
-    qDebug() << "Sending" << (quint16)(block.size() - sizeof(quint16)) << "bytes that server should read";
 
     qint64 c = sock->write(block);
     sock->waitForBytesWritten();
