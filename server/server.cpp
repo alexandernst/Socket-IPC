@@ -23,23 +23,26 @@ Server::Server(QString servername, QObject *parent) : QObject(parent){
         QLocalSocket *sock = m_server->nextPendingConnection();
         clients.insert(clientID, sock);
         sock->setProperty("ID", QVariant(clientID));
+        sock->setProperty("BTR", QVariant(0));
 
-        quint16 btr = 0;
-        QObject::connect(sock, &QLocalSocket::readyRead, [this, sock, &btr](){
+        QObject::connect(sock, &QLocalSocket::readyRead, [this, sock](){
             QDataStream in(sock);
             in.setVersion(QDataStream::Qt_5_0);
 
-            if(btr == 0)
+            if(sock->property("BTR").toInt() == 0){
+                quint16 btr;
                 in >> btr;
+                sock->setProperty("BTR", QVariant(btr));
+            }
 
-            if(sock->bytesAvailable() < btr)
+            if(sock->bytesAvailable() < sock->property("BTR").toInt())
                 return;
 
             QString message;
             in >> message;
 
-            btr = 0;
-            emit newMessageFromClient(this->clientID, message);
+            sock->setProperty("BTR", QVariant(0));
+            emit newMessageFromClient(sock->property("ID").toInt(), message);
         });
 
         connect(sock, &QLocalSocket::disconnected, [this, sock](){
