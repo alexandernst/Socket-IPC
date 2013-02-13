@@ -3,31 +3,29 @@
 Client::Client(QString sock_name, QObject *parent) : QObject(parent){
     sock = new QLocalSocket(this);
 
+    quint16 btr = 0;
+    QObject::connect(sock, &QLocalSocket::readyRead, [this, &btr](){
+        QDataStream in(sock);
+        in.setVersion(QDataStream::Qt_5_0);
+
+        if(btr == 0)
+            in >> btr;
+
+        if(sock->bytesAvailable() < btr)
+            return;
+
+        QString message;
+        in >> message;
+
+        btr = 0;
+        emit newMessageFromServer(message);
+    });
+
     connect(sock, &QLocalSocket::disconnected, [this](){
         emit disconnected();
     });
 
-    connect(sock, &QLocalSocket::readyRead, [this](){
-        QDataStream in(sock);
-        in.setVersion(QDataStream::Qt_5_0);
-
-        if(bytes_to_read == 0){
-            if(sock->bytesAvailable() < (int)sizeof(quint16))
-                return;
-            in >> bytes_to_read;
-        }
-
-        if(in.atEnd())
-            return;
-
-        in >> received_message;
-        bytes_to_read = 0;
-
-        emit newMessageFromServer(received_message);
-    });
-
     sock->connectToServer(sock_name);
-    bytes_to_read = 0;
 }
 
 Client::~Client(){

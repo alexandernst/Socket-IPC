@@ -10,8 +10,6 @@ class Client : public QObject{
 
     private:
         QLocalSocket *sock;
-        qint16 bytes_to_read;
-        QString received_message;
 
     public:
         explicit Client(QString sock_name, QObject *parent = 0);
