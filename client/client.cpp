@@ -2,22 +2,25 @@
 
 Client::Client(QString sock_name, QObject *parent) : QObject(parent){
     sock = new QLocalSocket(this);
+    sock->setProperty("BTR", QVariant(0));
 
-    quint16 btr = 0;
-    QObject::connect(sock, &QLocalSocket::readyRead, [this, &btr](){
+    QObject::connect(sock, &QLocalSocket::readyRead, [this](){
         QDataStream in(sock);
         in.setVersion(QDataStream::Qt_5_0);
 
-        if(btr == 0)
+        if(sock->property("BTR").toInt() == 0){
+            quint16 btr;
             in >> btr;
+            sock->setProperty("BTR", QVariant(btr));
+        }
 
-        if(sock->bytesAvailable() < btr)
+        if(sock->bytesAvailable() < sock->property("BTR").toInt())
             return;
 
         QString message;
         in >> message;
 
-        btr = 0;
+        sock->setProperty("BTR", QVariant(0));
         emit newMessageFromServer(message);
     });
 
@@ -34,13 +37,18 @@ Client::~Client(){
 }
 
 void Client::sendMessage(QString message){
+    sock->flush();
+
     QByteArray block;
     QDataStream out(&block, QIODevice::WriteOnly);
+
     out.setVersion(QDataStream::Qt_5_0);
+
     out << (quint16)0;
     out << message;
     out.device()->seek(0);
     out << (quint16)(block.size() - sizeof(quint16));
+    qDebug() << "Sending" << (quint16)(block.size() - sizeof(quint16)) << "bytes that server should read";
 
     qint64 c = sock->write(block);
     sock->waitForBytesWritten();
