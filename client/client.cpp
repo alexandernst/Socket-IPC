@@ -9,7 +9,7 @@ Client::Client(QString sock_name, QObject *parent) : QObject(parent){
         in.setVersion(QDataStream::Qt_5_0);
 
         if(sock->property("BTR").toInt() == 0){
-            quint16 btr;
+            quint64 btr;
             in >> btr;
             sock->setProperty("BTR", QVariant(btr));
         }
@@ -44,10 +44,10 @@ void Client::sendMessage(QString message){
 
     out.setVersion(QDataStream::Qt_5_0);
 
-    out << (quint16)0;
+    out << (quint64)0;
     out << message;
     out.device()->seek(0);
-    out << (quint16)(block.size() - sizeof(quint16));
+    out << (quint64)(block.size() - sizeof(quint64));
 
     qint64 c = sock->write(block);
     sock->waitForBytesWritten();
